@@ -40,14 +40,16 @@ fn help() -> String {
     backup      backup existing kubectl to $HOME/.kube/backup   
     merge       merge kubeconfig with existing kubeconfig in $HOME/.kube/config
     delete      delete config from list
+    rename      rename  context
 
     Usage:
-    connect <string>                   define string connection
-    connect get                        show full list contexts
-    connect get --simple               show list context filter by name
-    connect merge <fullpath file>      will execute backup first before merge
-    connect delete <string>            delete context, cluster, users
-    connect backup                     will save file name with format config_$(date +%Y_%m_%d_%I_%M_%S_%p)
+    connect <string>                            define string connection
+    connect get                                 show full list contexts
+    connect get --simple                        show list context filter by name
+    connect merge <fullpath file>               will execute backup first before merge
+    connect delete <string>                     delete context, cluster, users
+    connect backup                              will save file name with format config_$(date +%Y_%m_%d_%I_%M_%S_%p)
+    connect rename <old context> <new context>  rename context
 
     Notes:
     <string> defined using 'grep' so you can type similar name context, cluster or user.
@@ -145,14 +147,33 @@ fn main() {
             } else {
                 println!("Nevermind then :)");
             }
+        } else if query == "rename" && args.len() == 4{        
+            let q = &args[2];
+            let change = &args[3];
+            let get_context = command(format!("{}{}","kubectl config get-contexts --output name | grep ",q));
+            
+            if Confirm::with_theme(&ColorfulTheme::default())
+            .with_prompt("Do you want to continue rename context ".to_owned()+String::from_utf8_lossy(&get_context).trim()+" ?")
+            .interact()
+            .unwrap()
+            {
+                command("kubectl config rename-context ".to_string()+String::from_utf8_lossy(&get_context).trim()+ " "+change);
+                let p = command("kubectl config get-contexts".to_string());
+                println!("{}", String::from_utf8_lossy(&p).trim());
+
+            } else {
+                println!("Nevermind then :)");
+            }
 
         } else if query == "--help" || query == "help" || query == "merge" {
             println!("{}", help());
 
-        }else{
+        }else if args.len() == 2 {
             let c = command(format!("{}{}","kubectl config get-contexts --output name | grep ",query));
             let f = command(format!("{}{}","kubectl config use-context ",String::from_utf8_lossy(&c).trim()));
             println!("{}",String::from_utf8_lossy(&f).trim())
+        }else{
+            println!("{}", help());
         }
     }
 }
