@@ -31,6 +31,7 @@ fn command(c: String) -> Vec<u8> {
 }
 
 fn help() -> String {
+    // let version = env!("CARGO_PKG_VERSION");
     let s = String::from(
     "
     Simplify switch kubernetes context!
@@ -42,6 +43,7 @@ fn help() -> String {
     delete      delete config from list
     rename      rename  context
     ns          set default namespace
+    version     show version
 
     Usage:
     connect <string>                            define string connection
@@ -53,6 +55,7 @@ fn help() -> String {
     connect backup                              will save file name with format config_$(date +%Y_%m_%d_%I_%M_%S_%p)
     connect rename <old context> <new context>  rename context
     connect ns <string>                         set default namespace in current context (after select context)
+    connect version                             show and rust version
 
     Notes:
     <string> defined using 'grep' so you can type similar name context, cluster or user.
@@ -72,6 +75,9 @@ fn bar (c: u64) {
     }
     return pb.finish_print("- done");
 }
+
+
+build_info::build_info!(fn build_info);
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -168,6 +174,8 @@ fn main() {
         }else if query == "ns" && args.len() == 3 {
             let select_ns = command(format!("{}{}","kubectl config set-context --current --namespace=", &args[2]));
             println!("{}",String::from_utf8_lossy(&select_ns).trim());
+        }else if query == "version" && args.len() == 2 {
+            println!("{}", build_info::format!());
         } else if query == "--help" || query == "help" || query == "merge" {
             println!("{}", help());
         }else if args.len() == 2 {
