@@ -41,15 +41,18 @@ fn help() -> String {
     merge       merge kubeconfig with existing kubeconfig in $HOME/.kube/config
     delete      delete config from list
     rename      rename  context
+    ns          set default namespace
 
     Usage:
     connect <string>                            define string connection
+                     ns <string>                instant set default namespace
     connect get                                 show full list contexts
     connect get --simple                        show list context filter by name
     connect merge <fullpath file>               will execute backup first before merge
     connect delete <string>                     delete context, cluster, users
     connect backup                              will save file name with format config_$(date +%Y_%m_%d_%I_%M_%S_%p)
     connect rename <old context> <new context>  rename context
+    connect ns <string>                         set default namespace in current context (after select context)
 
     Notes:
     <string> defined using 'grep' so you can type similar name context, cluster or user.
@@ -72,7 +75,6 @@ fn bar (c: u64) {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-
     if args.len() == 1 {
         println!("{}", help());
     }else {
@@ -81,7 +83,6 @@ fn main() {
             // command("kubectl","config get-contexts"); using vector
             let p = command("kubectl config get-contexts".to_string());
             println!("{}", String::from_utf8_lossy(&p).trim());
-        
         } else if query == "get" && (&args[2] == "--simple"){
             let simple = command("kubectl config get-contexts --output=name".to_string());
             println!("{}", String::from_utf8_lossy(&simple).trim());
@@ -164,16 +165,24 @@ fn main() {
             } else {
                 println!("Nevermind then :)");
             }
-
+        }else if query == "ns" && args.len() == 3 {
+            let select_ns = command(format!("{}{}","kubectl config set-context --current --namespace=", &args[2]));
+            println!("{}",String::from_utf8_lossy(&select_ns).trim());
         } else if query == "--help" || query == "help" || query == "merge" {
             println!("{}", help());
-
         }else if args.len() == 2 {
             let c = command(format!("{}{}","kubectl config get-contexts --output name | grep ",query));
             let f = command(format!("{}{}","kubectl config use-context ",String::from_utf8_lossy(&c).trim()));
             println!("{}",String::from_utf8_lossy(&f).trim())
+        }else if &args[2] == "ns" && args.len() == 4 {
+            let get_context = command(format!("{}{}","kubectl config get-contexts --output name | grep ",query));
+            let select_context = command(format!("{}{}","kubectl config use-context ",String::from_utf8_lossy(&get_context).trim()));
+            println!("{}",String::from_utf8_lossy(&select_context).trim());
+            let select_ns = command(format!("{}{}","kubectl config set-context --current --namespace=", &args[3]));
+            println!("{}",String::from_utf8_lossy(&select_ns).trim());
         }else{
             println!("{}", help());
         }
+        
     }
 }
